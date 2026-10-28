@@ -32,3 +32,5 @@
 
 
 html{scroll-behavior:auto}.page-scroll-frost{position:fixed;inset:0;z-index:100;pointer-events:none;opacity:0;backdrop-filter:blur(2.5px);-webkit-backdrop-filter:blur(2.5px);transition:opacity .22s ease-out}.page-scroll-frost.is-scrolling{opacity:1}body:has(dialog[open]) .page-scroll-frost{opacity:0;transition:none}@media(prefers-reduced-motion:reduce){.page-scroll-frost{display:none}}
+
+main>.closing{padding:140px 20px 48px;color:#fff;text-align:center}main>.closing p{font-size:16px;font-weight:700;line-height:1.15;margin:0 0 310px}main>.closing strong{font-size:38px;font-weight:800;line-height:1.1;letter-spacing:-.025em}@media(max-width:600px){main>.closing{padding:100px 16px 32px}main>.closing p{font-size:12px;margin-bottom:230px}main>.closing strong{font-size:clamp(24px,6vw,34px)}}
