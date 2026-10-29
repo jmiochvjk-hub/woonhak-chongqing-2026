@@ -1,12 +1,13 @@
 const imageFormats={"03.webp":"03.jpg","15.webp":"15.jpg","quote-02.webp":"quote-02.png","photo-02.webp":"photo-02.jpg","19.webp":"19.jpg","18.webp":"18.jpg","photo-03.webp":"photo-03.jpg","quote-03.webp":"quote-03.png","14.webp":"14.jpg","02.webp":"02.png","photo-04.webp":"photo-04.jpg","09.webp":"09.jpg","quote-08.webp":"quote-08.png","photo-08.webp":"photo-08.jpg","05.webp":"05.jpg","13.webp":"13.jpg","quote-04.webp":"quote-04.png","quote-05.webp":"quote-05.png","12.webp":"12.jpg","04.webp":"04.jpg","photo-09.webp":"photo-09.jpg","quote-09.webp":"quote-09.png","08.webp":"08.jpg","photo-05.webp":"photo-05.jpg","photo-06.webp":"photo-06.jpg","quote-06.webp":"quote-06.png","11.webp":"11.jpg","07.webp":"07.jpg","06.webp":"06.jpg","10.webp":"10.jpg","quote-07.webp":"quote-07.png","photo-07.webp":"photo-07.jpg","17.webp":"17.jpg","01.webp":"01.jpg","photo-01.webp":"photo-01.jpg","00.webp":"00.jpg","16.webp":"16.jpg","quote-01.webp":"quote-01.png"};
-function imageAsset(id){const name=(typeof id==='number'?String(id).padStart(2,'0'):id)+'.webp';return 'assets/'+imageFormats[name]}
+function mobileAsset(path){return matchMedia('(max-width:600px)').matches&&!path.includes('-mobile.')?path.replace(/\.(jpg|png)$/,'-mobile.$1'):path}
+function imageAsset(id){const name=(typeof id==='number'?String(id).padStart(2,'0'):id)+'.webp';return mobileAsset('assets/'+imageFormats[name])}
 const dialog=document.querySelector('#viewer'),slides=document.querySelector('#slides');
 const galleries={materials:{title:'',images:[6,0,4,5,8,9,10,11,12]},process:{title:'Process · 活动流程',images:[3]},notes:{title:'Notes · 注意事项',images:[7]},concept:{title:'Concept · 概念简要',images:[18]},photos:{title:'ANGEL OR DEVIL · 视觉收藏',images:[5,3,1,2,4,6,7,8,9].map(i=>`photo-${String(i).padStart(2,'0')}`)},style:{title:'WOONSTYLE · 服装细节',images:[17,16]}};
 let total=0,current=0,lastFocus,depthMode=false;
 function loadNearby(container,index){
  if(container.id!=='slides'&&container.dataset.ready!=='true')return;
  const cards=[...container.children],length=cards.length;
- cards.forEach((card,i)=>{let distance=Math.abs(i-index);distance=Math.min(distance,length-distance);if(distance>1)return;const image=card.querySelector('img[data-src]');if(image){image.src=image.dataset.src;delete image.dataset.src}});
+ cards.forEach((card,i)=>{let distance=Math.abs(i-index);distance=Math.min(distance,length-distance);if(distance>1)return;const image=card.querySelector('img[data-src]');if(image){image.src=mobileAsset(image.dataset.src);delete image.dataset.src}});
 }
 function placeCards(container,index,progress=0){const cards=[...container.children],length=cards.length;cards.forEach((card,i)=>{let offset=(i-index+length)%length;if(offset>length/2)offset-=length;offset+=progress;const distance=Math.abs(offset);card.style.setProperty("--offset",offset);card.style.setProperty("--distance",distance);card.style.zIndex=String(Math.round(200-distance*10));card.classList.toggle("is-front",distance<.5);card.classList.toggle("is-hidden",distance>2.5);card.setAttribute("aria-hidden",String(distance>2.5));if(card.tagName==="BUTTON")card.tabIndex=distance>1?-1:0;});loadNearby(container,index);}
 function updateCount(){}
@@ -81,24 +82,11 @@ if('IntersectionObserver' in window){
 
 document.querySelector('#flip-page').onclick=()=>move(1);
 
-const backupImageBase='https://cdn.jsdelivr.net/gh/jmiochvjk-hub/woonhak-chongqing-2026@03779ab88c5d73990b6e09ef250a0671395889a1/assets/';
-const imageTimers=new WeakMap();
-function useBackupImage(image){
- if(image.dataset.backupUsed||!image.isConnected)return;
- const original=image.currentSrc||image.getAttribute('src');if(!original)return;
- const url=new URL(original,location.href);const marker='/assets/';const at=url.pathname.indexOf(marker);if(at<0)return;
- image.dataset.backupUsed='true';clearTimeout(imageTimers.get(image));
- const picture=image.closest('picture');picture?.querySelectorAll('source').forEach(source=>source.removeAttribute('srcset'));
- image.src=backupImageBase+url.pathname.slice(at+marker.length);
-}
-function watchImage(image){
- if(!(image instanceof HTMLImageElement)||image.dataset.backupUsed||(!image.getAttribute('src')&&!image.currentSrc))return;
- clearTimeout(imageTimers.get(image));if(image.complete&&image.naturalWidth>0)return;
- if(image.complete&&image.naturalWidth===0){useBackupImage(image);return}
- imageTimers.set(image,setTimeout(()=>{if(!image.complete||image.naturalWidth===0)useBackupImage(image)},6000));
-}
-document.addEventListener('load',event=>{if(event.target instanceof HTMLImageElement)clearTimeout(imageTimers.get(event.target))},true);
-document.addEventListener('error',event=>{if(event.target instanceof HTMLImageElement)useBackupImage(event.target)},true);
-const imageObserver=new MutationObserver(changes=>{for(const change of changes){if(change.type==='attributes')watchImage(change.target);else for(const node of change.addedNodes){if(node.nodeType===1){watchImage(node);node.querySelectorAll?.('img[src]').forEach(watchImage)}}}});
-imageObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['src']});
-if('IntersectionObserver' in window){const visibleImages=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){watchImage(entry.target);visibleImages.unobserve(entry.target)}},{rootMargin:'250px'});document.querySelectorAll('img[src]').forEach(image=>visibleImages.observe(image))}else document.querySelectorAll('img[src]').forEach(watchImage);
+
+// Retry only after an actual failure; never interrupt a slow in-progress download.
+document.addEventListener('error',event=>{
+ const image=event.target;if(!(image instanceof HTMLImageElement)||image.dataset.retryDone)return;
+ image.dataset.retryDone='true';const source=image.currentSrc||image.getAttribute('src');if(!source)return;
+ const retry=new URL(source,location.href);retry.searchParams.set('retry','1');
+ setTimeout(()=>{if(!image.isConnected)return;const picture=image.closest('picture');picture?.querySelectorAll('source').forEach(item=>item.removeAttribute('srcset'));image.removeAttribute('srcset');image.src=retry.href},1000);
+},true);
