@@ -39,3 +39,5 @@ main>.closing{padding:140px 20px 48px;color:#fff;text-align:center}main>.closing
 @media(max-width:600px){.hero{height:calc((100vw - 36px)*.9474);min-height:340px}.depth-viewer .quote-original{width:80%;height:85%}.hero .rednote{font-size:18px;bottom:9%}}
 
 body{background:#000}.hero,.gallery{background:#000}.hero-artwork,.gallery-artwork svg{mix-blend-mode:normal;filter:none}
+
+.intro>picture{display:block;width:85%;margin-left:17%}.intro>picture>img{width:100%;height:auto}
