@@ -74,14 +74,31 @@ window.addEventListener('scroll',()=>{
 },{passive:true});
 dialog.addEventListener('close',()=>{clearTimeout(frostTimer);scrollFrost.classList.remove('is-scrolling');lastScrollY=window.scrollY});
 
-document.addEventListener('error',event=>{
- const img=event.target;if(!(img instanceof HTMLImageElement)||img.dataset.retried)return;
- img.dataset.retried='true';const source=new URL(img.currentSrc||img.src,location.href);
- source.searchParams.set('retry','1');setTimeout(()=>{if(img.isConnected)img.src=source.href},500);
-},true);
 
 if('IntersectionObserver' in window){
  const photoObserver=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){photoStage.dataset.ready='true';loadNearby(photoStage,photoIndex);photoObserver.disconnect()}},{rootMargin:'250px'});photoObserver.observe(photoStage);
 }else{photoStage.dataset.ready='true';loadNearby(photoStage,photoIndex)}
 
 document.querySelector('#flip-page').onclick=()=>move(1);
+
+const backupImageBase='https://cdn.jsdelivr.net/gh/jmiochvjk-hub/woonhak-chongqing-2026@03779ab88c5d73990b6e09ef250a0671395889a1/assets/';
+const imageTimers=new WeakMap();
+function useBackupImage(image){
+ if(image.dataset.backupUsed||!image.isConnected)return;
+ const original=image.currentSrc||image.getAttribute('src');if(!original)return;
+ const url=new URL(original,location.href);const marker='/assets/';const at=url.pathname.indexOf(marker);if(at<0)return;
+ image.dataset.backupUsed='true';clearTimeout(imageTimers.get(image));
+ const picture=image.closest('picture');picture?.querySelectorAll('source').forEach(source=>source.removeAttribute('srcset'));
+ image.src=backupImageBase+url.pathname.slice(at+marker.length);
+}
+function watchImage(image){
+ if(!(image instanceof HTMLImageElement)||image.dataset.backupUsed||(!image.getAttribute('src')&&!image.currentSrc))return;
+ clearTimeout(imageTimers.get(image));if(image.complete&&image.naturalWidth>0)return;
+ if(image.complete&&image.naturalWidth===0){useBackupImage(image);return}
+ imageTimers.set(image,setTimeout(()=>{if(!image.complete||image.naturalWidth===0)useBackupImage(image)},6000));
+}
+document.addEventListener('load',event=>{if(event.target instanceof HTMLImageElement)clearTimeout(imageTimers.get(event.target))},true);
+document.addEventListener('error',event=>{if(event.target instanceof HTMLImageElement)useBackupImage(event.target)},true);
+const imageObserver=new MutationObserver(changes=>{for(const change of changes){if(change.type==='attributes')watchImage(change.target);else for(const node of change.addedNodes){if(node.nodeType===1){watchImage(node);node.querySelectorAll?.('img[src]').forEach(watchImage)}}}});
+imageObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['src']});
+if('IntersectionObserver' in window){const visibleImages=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){watchImage(entry.target);visibleImages.unobserve(entry.target)}},{rootMargin:'250px'});document.querySelectorAll('img[src]').forEach(image=>visibleImages.observe(image))}else document.querySelectorAll('img[src]').forEach(watchImage);
