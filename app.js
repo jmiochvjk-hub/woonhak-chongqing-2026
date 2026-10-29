@@ -1,3 +1,5 @@
+const imageFormats={"03.webp":"03.png","15.webp":"15.png","quote-02.webp":"quote-02.png","photo-02.webp":"photo-02.jpg","19.webp":"19.png","18.webp":"18.jpg","photo-03.webp":"photo-03.jpg","quote-03.webp":"quote-03.png","14.webp":"14.png","02.webp":"02.png","photo-04.webp":"photo-04.jpg","09.webp":"09.png","quote-08.webp":"quote-08.png","photo-08.webp":"photo-08.jpg","05.webp":"05.jpg","13.webp":"13.jpg","quote-04.webp":"quote-04.png","quote-05.webp":"quote-05.png","12.webp":"12.png","04.webp":"04.jpg","photo-09.webp":"photo-09.jpg","quote-09.webp":"quote-09.png","08.webp":"08.jpg","photo-05.webp":"photo-05.jpg","photo-06.webp":"photo-06.jpg","quote-06.webp":"quote-06.png","11.webp":"11.png","07.webp":"07.png","06.webp":"06.png","10.webp":"10.png","quote-07.webp":"quote-07.png","photo-07.webp":"photo-07.jpg","17.webp":"17.png","01.webp":"01.jpg","photo-01.webp":"photo-01.jpg","00.webp":"00.jpg","16.webp":"16.png","quote-01.webp":"quote-01.png"};
+function imageAsset(id){const name=(typeof id==='number'?String(id).padStart(2,'0'):id)+'.webp';return 'assets/'+imageFormats[name]}
 const dialog=document.querySelector('#viewer'),slides=document.querySelector('#slides');
 const galleries={materials:{title:'',images:[6,0,4,5,8,9,10,11,12]},process:{title:'Process · 活动流程',images:[3]},notes:{title:'Notes · 注意事项',images:[7]},concept:{title:'Concept · 概念简要',images:[18]},photos:{title:'ANGEL OR DEVIL · 视觉收藏',images:[5,3,1,2,4,6,7,8,9].map(i=>`photo-${String(i).padStart(2,'0')}`)},style:{title:'WOONSTYLE · 服装细节',images:[17,16]}};
 let total=0,current=0,lastFocus,depthMode=false;
@@ -5,7 +7,7 @@ function placeCards(container,index,progress=0){const cards=[...container.childr
 function updateCount(){}
 function update(){if(depthMode)return;current=Math.round(slides.scrollLeft/slides.clientWidth);updateCount()}
 function openViewer(title,html,index=0,depth=false){lastFocus=document.activeElement;depthMode=depth;current=index;document.querySelector('#viewer-title').textContent=title;slides.classList.toggle('depth-viewer',depth);slides.innerHTML=html;dialog.classList.toggle('quotes-only',Boolean(slides.querySelector('.quote-scene')));total=slides.children.length;dialog.showModal();document.body.style.overflow='hidden';if(depth){slides.scrollLeft=0;placeCards(slides,current);[...slides.children].forEach((card,i)=>card.onclick=()=>{current=i;placeCards(slides,current);updateCount()})}else slides.scrollLeft=index*slides.clientWidth;updateCount();document.querySelector('#close').focus()}
-function imageSlides(images,title,concept=false){return images.map((id,index)=>`<div class="slide"><img class="${concept?'concept-text':''}" src="assets/${typeof id==='number'?String(id).padStart(2,'0'):id}.webp" alt="${title || '物料详情'} ${index+1}"></div>`).join('')}
+function imageSlides(images,title,concept=false){return images.map((id,index)=>`<div class="slide"><img class="${concept?'concept-text':''}" decoding="async" src="${imageAsset(id)}" alt="${title || '物料详情'} ${index+1}"></div>`).join('')}
 document.querySelectorAll('[data-gallery]').forEach(button=>button.addEventListener('click',()=>{const g=galleries[button.dataset.gallery];openViewer(g.title,imageSlides(g.images,g.title,button.dataset.gallery==='concept'),Number(button.dataset.index||0),g.images.length>1)}));
 const quoteImages=Array.from({length:9},(_,i)=>`quote-${String(i+1).padStart(2,'0')}`);
 document.querySelector('#quotes').onclick=()=>openViewer('WOONHAK’S QUOTES',imageSlides(quoteImages,'金云鹤语录').replaceAll('class="slide"','class="slide quote-scene quote-original"'),0,true);
@@ -65,3 +67,9 @@ window.addEventListener('scroll',()=>{
  frostTimer=setTimeout(()=>scrollFrost.classList.remove('is-scrolling'),110);
 },{passive:true});
 dialog.addEventListener('close',()=>{clearTimeout(frostTimer);scrollFrost.classList.remove('is-scrolling');lastScrollY=window.scrollY});
+
+document.addEventListener('error',event=>{
+ const img=event.target;if(!(img instanceof HTMLImageElement)||img.dataset.retried)return;
+ img.dataset.retried='true';const source=new URL(img.currentSrc||img.src,location.href);
+ source.searchParams.set('retry','1');setTimeout(()=>{if(img.isConnected)img.src=source.href},500);
+},true);
