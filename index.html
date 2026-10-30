@@ -64,7 +64,7 @@ const imageFormats={"03.webp":"03.jpg","15.webp":"15.jpg","quote-02.webp":"quote
 function mobileAsset(path){return matchMedia('(max-width:600px)').matches&&!path.includes('-mobile.')?path.replace(/\.(jpg|png)$/,'-mobile.$1'):path}
 function imageAsset(id){const name=(typeof id==='number'?String(id).padStart(2,'0'):id)+'.webp';return mobileAsset('assets/'+imageFormats[name])}
 const dialog=document.querySelector('#viewer'),slides=document.querySelector('#slides');
-const galleries={materials:{title:'',images:[6,0,4,5,8,9,10,11,12]},process:{title:'Process · 活动流程',images:[3]},notes:{title:'Notes · 注意事项',images:[7]},concept:{title:'Concept · 概念简要',images:[18]},photos:{title:'ANGEL OR DEVIL · 视觉收藏',images:[5,3,1,2,4,6,7,8,9].map(i=>`photo-${String(i).padStart(2,'0')}`)},style:{title:'WOONSTYLE · 服装细节',images:[17,16]}};
+const galleries={materials:{title:'',images:[0,4,5,8,9,10,11,12]},process:{title:'Process · 活动流程',images:[3]},notes:{title:'Notes · 注意事项',images:[7]},concept:{title:'Concept · 概念简要',images:[18]},photos:{title:'ANGEL OR DEVIL · 视觉收藏',images:[5,3,1,2,4,6,7,8,9].map(i=>`photo-${String(i).padStart(2,'0')}`)},style:{title:'WOONSTYLE · 服装细节',images:[17,16]}};
 let total=0,current=0,lastFocus,depthMode=false;
 function loadNearby(container,index){
  if(container.id!=='slides'&&container.dataset.ready!=='true')return;
